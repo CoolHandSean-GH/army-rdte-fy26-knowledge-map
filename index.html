@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Army RDT&amp;E FY26 Funding Ecosystem — Knowledge Map</title>
+<meta name="description" content="Interactive knowledge map of the Army RDT&E FY26 budget: budget activities, program lines, reconciliation adds, and the DARPA/DIU/SCO/CDAO innovation ecosystem.">
+<meta property="og:title" content="Army RDT&E FY26 Funding Ecosystem — Knowledge Map">
+<meta property="og:description" content="Explore Army RDT&E FY26 budget activities, program lines, and how DARPA, DIU, SCO, CDAO, TRMC & OSC fit into the innovation ecosystem. Tap any node for sourced details.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<style>
+  :root{
+    --root:#1f2d50; --ba:#2b6cb0; --program:#38a169; --recon:#d69e2e;
+    --hub:#7b2ff7; --org:#c026d3; --context:#718096; --bg:#0f1117; --panel:#161a24;
+    --text:#e6e8ee; --muted:#9aa3b2; --edge:#3a4256;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;font-family:-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;touch-action:none;}
+  #app{display:flex;height:100vh;height:100dvh;}
+  #canvasWrap{flex:1;position:relative;overflow:hidden;cursor:grab;touch-action:none;}
+  #canvasWrap.dragging{cursor:grabbing;}
+  svg{width:100%;height:100%;display:block;}
+  .edge{stroke:var(--edge);stroke-width:1.4;fill:none;opacity:.7;}
+  .edge.hi{stroke:#ffd166;stroke-width:2.6;opacity:1;}
+  .node circle.hit{fill:transparent;stroke:none;}
+  .node circle.visible{stroke:#0f1117;stroke-width:2;transition:filter .15s;}
+  .node{cursor:pointer;}
+  .node:hover circle.visible{filter:brightness(1.3);}
+  .node text{fill:var(--text);font-size:11px;pointer-events:none;text-anchor:middle;font-weight:600;}
+  #sidebar{width:340px;background:var(--panel);border-left:1px solid #232838;padding:18px;overflow-y:auto;flex-shrink:0;-webkit-overflow-scrolling:touch;}
+  #sidebar h2{margin:0 0 4px;font-size:16px;color:#fff;}
+  #sidebar .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;margin-bottom:10px;color:#0f1117;font-weight:700;}
+  #sidebar .val{font-size:13px;color:#ffd166;margin-bottom:10px;font-weight:600;}
+  #sidebar .desc{font-size:13px;line-height:1.5;color:#d7dbe6;margin-bottom:12px;}
+  #sidebar .src{font-size:11px;color:var(--muted);border-top:1px solid #232838;padding-top:8px;}
+  #topbar{position:absolute;top:0;left:0;right:340px;padding:12px 14px;display:flex;gap:10px;align-items:center;z-index:5;background:linear-gradient(to bottom, rgba(15,17,23,.97), rgba(15,17,23,0));flex-wrap:wrap;}
+  #topbar h1{font-size:14px;margin:0;font-weight:700;color:#fff;white-space:nowrap;}
+  #search{background:#1b1f2b;border:1px solid #2d3348;color:#fff;padding:8px 10px;border-radius:6px;font-size:13px;width:150px;flex:1;min-width:100px;}
+  .legend{position:absolute;bottom:12px;left:12px;background:rgba(22,26,36,.92);border:1px solid #232838;border-radius:8px;padding:8px 12px;font-size:10.5px;z-index:5;max-width:200px;}
+  .legend div{display:flex;align-items:center;gap:6px;margin:3px 0;}
+  .legend .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0;}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;}
+  .filters label{font-size:11px;background:#1b1f2b;padding:6px 9px;border-radius:12px;cursor:pointer;border:1px solid #2d3348;user-select:none;}
+  .filters input{margin-right:4px;}
+  #zoomBtns{position:absolute;bottom:12px;right:12px;display:flex;flex-direction:column;gap:8px;z-index:5;}
+  #zoomBtns button{width:40px;height:40px;background:#1b1f2b;border:1px solid #2d3348;color:#fff;border-radius:8px;font-size:18px;cursor:pointer;}
+  #placeholder{color:var(--muted);font-size:13px;text-align:center;margin-top:40px;}
+  #footer{position:absolute;bottom:0;left:0;right:340px;text-align:center;font-size:10px;color:var(--muted);padding:5px;pointer-events:none;}
+  #mobileToggle{display:none;}
+  #legendToggle{display:none;}
+
+  @media (max-width: 820px){
+    #app{flex-direction:column;}
+    #canvasWrap{flex:1;order:1;}
+    #topbar{right:0;top:0;padding:10px;gap:8px;}
+    #topbar h1{font-size:12.5px;flex-basis:100%;}
+    #search{width:auto;}
+    .filters{display:none;}
+    .filters.open{display:flex;position:absolute;top:78px;left:10px;right:10px;background:rgba(22,26,36,.97);border:1px solid #232838;border-radius:10px;padding:10px;z-index:6;}
+    #mobileToggle{display:inline-block;background:#1b1f2b;border:1px solid #2d3348;color:#fff;padding:8px 10px;border-radius:6px;font-size:12px;}
+    .legend{display:none;}
+    .legend.open{display:block;bottom:60px;left:10px;right:10px;max-width:none;}
+    #legendToggle{display:inline-block;background:#1b1f2b;border:1px solid #2d3348;color:#fff;padding:8px 10px;border-radius:6px;font-size:12px;}
+    #zoomBtns{bottom:12px;right:12px;}
+    #footer{display:none;}
+    #sidebar{
+      width:100%;
+      order:2;
+      max-height:0;
+      overflow:hidden;
+      transition:max-height .25s ease;
+      border-left:none;
+      border-top:1px solid #232838;
+      padding:0 18px;
+    }
+    #sidebar.expanded{
+      max-height:46vh;
+      padding:16px 18px;
+      overflow-y:auto;
+    }
+    #placeholder{margin-top:14px;font-size:12px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="canvasWrap">
+    <div id="topbar">
+      <h1>🪖 Army RDT&amp;E FY26 Funding Ecosystem</h1>
+      <input id="search" placeholder="Search nodes...">
+      <button id="mobileToggle">Filters ▾</button>
+      <button id="legendToggle">Legend ▾</button>
+      <div class="filters" id="filters"></div>
+    </div>
+    <svg id="svg"><g id="viewport"></g></svg>
+    <div class="legend" id="legend"></div>
+    <div id="zoomBtns">
+      <button id="zin">+</button>
+      <button id="zout">−</button>
+      <button id="zreset">⟳</button>
+    </div>
+    <div id="footer">Data: ASAFM FY26 RDTE Justification Books · CRS R48694 · war.gov CTO memo (Jan 2026) · Defense One · Defense Acquisition &amp; Tech Substack — figures approximate, verify against primary budget docs</div>
+  </div>
+  <div id="sidebar">
+    <div id="placeholder">Tap any node to see FY26 budget details, org mission, and sources. Drag/swipe to pan, pinch or use +/− to zoom.</div>
+  </div>
+</div>
+
+<script>
+const DATA = {
+  "nodes": [
+    {"id":"root","label":"Army RDT&E\nFY26 Enacted","cat":"root","val":"$15.40B base (P.L. 119-75) · ~$16.24B incl. $847M reconciliation add","desc":"Total Army Research, Development, Test & Evaluation appropriation for FY2026 under the Consolidated Appropriations Act, 2026 (P.L. 119-75). CRS estimates the Army's Title IV RDT&E account rose ~17% ($2.4B) above FY2025 enacted levels — the largest percentage increase of any service.","src":"ASAFM RDTE Justification Books; CRS R48694"},
+
+    {"id":"ba1","label":"BA1\nBasic Research","cat":"ba","val":"−3.7% vs FY25","desc":"6.1 Basic Research — foundational scientific research with no specific application in mind. Declining as budget shifts toward near-term prototyping and fielding.","src":"LinkedIn/AiDA budget-activity analysis of FY26 Army RDTE books"},
+    {"id":"ba2","label":"BA2\nApplied Research","cat":"ba","val":"−25.9% vs FY25","desc":"6.2 Applied Research — research directed at a specific practical aim. One of the steepest cuts in the FY26 request, reflecting a pivot away from early-stage science toward BA4–BA7.","src":"AiDA/FY26 Army RDTE books"},
+    {"id":"ba3","label":"BA3\nAdvanced Tech Dev","cat":"ba","val":"−26.9% vs FY25","desc":"6.3 Advanced Technology Development — proof-of-concept/prototype work bridging applied research and system development. Also cut sharply in FY26.","src":"AiDA/FY26 Army RDTE books"},
+    {"id":"ba4","label":"BA4\nAdv. Component Dev\n& Prototypes","cat":"ba","val":"+17.2% vs FY25","desc":"6.4 — Advanced Component Development & Prototypes. Biggest growth area alongside BA7; funds new agile EW and UAS-launched-effects program elements.","src":"AiDA/FY26 Army RDTE books; DefenseOne FY26 R&D analysis"},
+    {"id":"ba5","label":"BA5\nSystem Dev &\nDemonstration","cat":"ba","val":"+5.7% · $5.68B (37% of total)","desc":"6.5 — Engineering & Manufacturing Development (EMD) for programs nearing fielding. Commands the largest single share of the Army RDT&E topline.","src":"AiDA/FY26 Army RDTE books"},
+    {"id":"ba6","label":"BA6\nMgmt Support","cat":"ba","val":"+15.5% vs FY25","desc":"6.6 — RDT&E Management Support: test facilities, ranges, and infrastructure sustainment/modernization for the broader RDT&E enterprise.","src":"AiDA/FY26 Army RDTE books"},
+    {"id":"ba7","label":"BA7\nOperational\nSystems Dev","cat":"ba","val":"+25.6% vs FY25","desc":"6.7 — Operational Systems Development: mature systems in production or being upgraded prior to full-rate production.","src":"AiDA/FY26 Army RDTE books"},
+
+    {"id":"p_hyper","label":"Hypersonics EMD","cat":"program","val":"$513M","desc":"Engineering & Manufacturing Development for Army hypersonic strike capability (LRHW-related EMD funding line).","src":"LinkedIn FY26 Army RDTE budget-activity breakdown","parent":"ba5"},
+    {"id":"p_mgv","label":"Manned Ground Vehicle","cat":"program","val":"$386M","desc":"Next-gen manned ground combat vehicle development.","src":"LinkedIn FY26 Army RDTE budget-activity breakdown","parent":"ba5"},
+    {"id":"p_nvs","label":"Night Vision Systems","cat":"program","val":"$351M","desc":"Soldier night-vision and sensor system R&D.","src":"LinkedIn FY26 Army RDTE budget-activity breakdown","parent":"ba5"},
+    {"id":"p_robot","label":"Ground Robotics","cat":"program","val":"$227M","desc":"Uncrewed ground systems R&D for contested maneuver.","src":"LinkedIn FY26 Army RDTE budget-activity breakdown","parent":"ba5"},
+    {"id":"p_aiamd","label":"AIAMD","cat":"program","val":"$146M","desc":"Army Integrated Air & Missile Defense — integration/testing of layered air-defense architecture.","src":"LinkedIn FY26 Army RDTE budget-activity breakdown","parent":"ba5"},
+    {"id":"p_ew","label":"Agile EW Dev\n(PE 0609277/78A)","cat":"program","val":">$500M combined","desc":"Two new FY26 program elements for agile electronic warfare — modular, software-first EW/counter-UAS capability inspired by Ukraine-style rapid iteration.","src":"Defense One, 'What the R&D budget proposal says about the future of war' (Jul 2025)","parent":"ba4"},
+    {"id":"p_uas","label":"UAS-Launched Effects\n(PE 0609345/46A)","cat":"program","val":"included above","desc":"New FY26 lines for UAS-launched loitering munitions/effects, emphasizing modular payloads and rapid reconfiguration.","src":"Defense One FY26 R&D analysis","parent":"ba4"},
+
+    {"id":"recon","label":"Reconciliation Add\n(+$847M)","cat":"recon","val":"$847M outside base budget","desc":"Supplemental Army RDT&E funding added via the FY2025 reconciliation act (P.L. 119-21), on top of the base $15.4B FY26 appropriation.","src":"P.L. 119-21; LinkedIn FY26 Army RDTE breakdown"},
+    {"id":"p_interceptor","label":"Future Interceptor","cat":"program","val":"$144M","desc":"Reconciliation-funded next-gen missile-defense interceptor development.","src":"LinkedIn FY26 Army RDTE breakdown","parent":"recon"},
+    {"id":"p_emam","label":"Expanded Mission\nArea Missile","cat":"program","val":"$99M","desc":"Reconciliation-funded expansion of missile mission-area capability.","src":"LinkedIn FY26 Army RDTE breakdown","parent":"recon"},
+    {"id":"p_mshorad","label":"M-SHORAD","cat":"program","val":"$60M","desc":"Maneuver Short-Range Air Defense — reconciliation-funded enhancement.","src":"LinkedIn FY26 Army RDTE breakdown","parent":"recon"},
+
+    {"id":"cto","label":"DoW CTO /\nInnovation Ecosystem","cat":"hub","val":"Est. Jan 2026 memo (Emil Michael, CTO)","desc":"Jan 9, 2026 SECWAR memo 'Transforming the Defense Innovation Ecosystem' created a unified structure under the Chief Technology Office, organizing six execution organizations around three Innovation Outcomes: Exquisite, Commercial, and Evolutionary Capabilities.","src":"war.gov press release; Defense Acquisition & Tech Substack analysis (Jan 2026)"},
+    {"id":"darpa","label":"DARPA","cat":"org","val":"Defense-wide RDT&E account (not Army-funded)","desc":"Defense Advanced Research Projects Agency. Focused on longer-horizon technology bets — 'creates and prevents strategic surprise.' Funded through the Defense-wide RDT&E account alongside MDA, OSD, and 15 other organizations, separate from the Army's own RDT&E line but coordinating on Army-relevant S&T (e.g., via Strategic & Tactical Technology Offices).","src":"CRS R48694; war.gov memo summary"},
+    {"id":"diu","label":"DIU","cat":"org","val":"Becoming a DoW Field Activity (DFA)","desc":"Defense Innovation Unit. DoW's lead interface for adopting commercial/dual-use technology at scale; manages a portfolio across 7 tech areas. Under the 2026 reorg it gains durable authorities but less latitude to self-set priorities, focusing on mid-horizon 'Commercial Capabilities.'","src":"defenseacquisition.substack.com; space.commerce.gov"},
+    {"id":"sco","label":"SCO","cat":"org","val":"Demoted from Principal Staff Assistant status","desc":"Strategic Capabilities Office. Identifies, develops, and fields disruptive near-term applications of existing systems. Low public profile; solicitations resemble DARPA's. Now a DoW Field Activity taking more direction from the CTO Action Group.","src":"defenseacquisition.substack.com (Jan 2026)"},
+    {"id":"cdao","label":"CDAO","cat":"org","val":"Horizontal AI/data enabler","desc":"Chief Digital and Artificial Intelligence Office. Cuts across all three Innovation Outcomes, providing AI and data infrastructure — previously ran extensive JADC2 experimentation and prototyping similar to R&E/DIU/DARPA efforts.","src":"war.gov memo; Substack analysis"},
+    {"id":"trmc","label":"TRMC","cat":"org","val":"Test infrastructure & tech","desc":"Test Resource Management Center. Manages test ranges/resources and develops test technology enabling continuous evaluation of new capabilities — links closely to Army BA6 (Management Support) funding for test infrastructure.","src":"war.gov memo; Substack analysis"},
+    {"id":"osc","label":"OSC\n(Office of Strategic\nCapital)","cat":"org","val":"Private-capital alignment","desc":"Aligns private investment capital to critical technology priorities, addressing gaps the commercial market alone hasn't filled — a financing-side complement to DIU's adoption mission.","src":"war.gov memo; Substack analysis"},
+
+    {"id":"dodctx","label":"DOD RDT&E Total\nFY26: $148.6B","cat":"context","val":"P.L. 119-75; +$4.9B (3%) vs FY25 enacted","desc":"Total DOD-wide RDT&E appropriation across Army, Navy, Air Force/Space Force, Defense-wide, and DOT&E accounts. Army's ~$15.4–16.2B is roughly 10–11% of this total.","src":"CRS R48694"},
+    {"id":"defwide","label":"Defense-wide\nRDT&E Account","cat":"context","val":"Includes DARPA, MDA, OSD, 15 other orgs, + classified funds","desc":"The appropriations account that actually funds DARPA (and MDA), distinct from any single Service's RDT&E account — this is why DARPA doesn't appear as an Army budget line despite deep coordination on Army-relevant tech.","src":"CRS R48694"}
+  ]
+};
+
+const COLORS = {
+  root:"#1f2d50", ba:"#2b6cb0", program:"#38a169", recon:"#d69e2e",
+  hub:"#7b2ff7", org:"#c026d3", context:"#718096"
+};
+const LABELS = {
+  root:"Army RDT&E Total", ba:"Budget Activity (BA)", program:"Program / Line Item",
+  recon:"Reconciliation Add", hub:"CTO / Ecosystem Hub", org:"Supporting Org (DARPA/DIU/SCO/etc)",
+  context:"DOD-wide Context"
+};
+const RADIUS = { root:34, hub:26, ba:22, org:20, recon:20, context:18, program:14 };
+
+const nodesById = {};
+DATA.nodes.forEach(n => nodesById[n.id]=n);
+
+const edges = [];
+DATA.nodes.forEach(n=>{
+  if(n.cat==='ba' || n.cat==='recon') edges.push({from:'root', to:n.id});
+  if(n.cat==='org') edges.push({from:'cto', to:n.id});
+  if(n.cat==='hub') edges.push({from:'root', to:n.id, dashed:true});
+  if(n.cat==='program' && n.parent) edges.push({from:n.parent, to:n.id});
+  if(n.cat==='context') edges.push({from:'root', to:n.id, dashed:true});
+});
+const coordLinks = [
+  ['darpa','ba1'], ['darpa','ba2'], ['darpa','ba3'],
+  ['diu','ba4'], ['sco','ba4'],
+  ['trmc','ba6'], ['cdao','ba4'],
+  ['defwide','darpa'], ['dodctx','defwide']
+];
+coordLinks.forEach(([a,b])=> edges.push({from:a, to:b, dashed:true, coord:true}));
+
+const W = 1600, H = 1000, CX = W*0.42, CY = H*0.5;
+const positions = {};
+positions['root'] = {x:CX, y:CY};
+
+const baIds = DATA.nodes.filter(n=>n.cat==='ba').map(n=>n.id);
+const reconId = 'recon';
+const ring1 = [...baIds, reconId];
+const ring1R = 230;
+ring1.forEach((id,i)=>{
+  const ang = (i/ring1.length)*2*Math.PI - Math.PI/2;
+  positions[id] = {x:CX+ring1R*Math.cos(ang), y:CY+ring1R*Math.sin(ang)};
+});
+
+DATA.nodes.filter(n=>n.cat==='program').forEach(n=>{
+  const parentPos = positions[n.parent] || {x:CX,y:CY};
+  const siblings = DATA.nodes.filter(s=>s.cat==='program' && s.parent===n.parent);
+  const idx = siblings.indexOf(n);
+  const baseAngle = Math.atan2(parentPos.y-CY, parentPos.x-CX);
+  const spread = 0.9;
+  const ang = baseAngle + (idx - (siblings.length-1)/2) * (spread/Math.max(siblings.length,1));
+  const r = 115;
+  positions[n.id] = {x:parentPos.x + r*Math.cos(ang), y:parentPos.y + r*Math.sin(ang)};
+});
+
+positions['cto'] = {x:CX-430, y:CY-40};
+const orgIds = DATA.nodes.filter(n=>n.cat==='org').map(n=>n.id);
+const orgR = 150;
+orgIds.forEach((id,i)=>{
+  const ang = (i/orgIds.length)*2*Math.PI;
+  positions[id] = {x:positions['cto'].x + orgR*Math.cos(ang), y:positions['cto'].y + orgR*Math.sin(ang)};
+});
+
+positions['dodctx'] = {x:CX-430, y:CY+280};
+positions['defwide'] = {x:CX-200, y:CY+330};
+
+const svg = document.getElementById('svg');
+const viewport = document.getElementById('viewport');
+const ns = "http://www.w3.org/2000/svg";
+
+const isMobile = window.matchMedia('(max-width: 820px)').matches;
+let transform = isMobile ? {x:40, y:60, k:0.42} : {x:60, y:20, k:0.72};
+function applyTransform(){
+  viewport.setAttribute('transform', `translate(${transform.x},${transform.y}) scale(${transform.k})`);
+}
+
+function el(tag, attrs){
+  const e = document.createElementNS(ns, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+const edgeEls = [];
+edges.forEach(e=>{
+  const p1 = positions[e.from], p2 = positions[e.to];
+  if(!p1||!p2) return;
+  const line = el('path', {
+    d:`M${p1.x},${p1.y} L${p2.x},${p2.y}`,
+    class:'edge',
+    'stroke-dasharray': e.dashed ? '5,5' : 'none'
+  });
+  viewport.appendChild(line);
+  edgeEls.push({el:line, from:e.from, to:e.to});
+});
+
+const nodeGroups = {};
+DATA.nodes.forEach(n=>{
+  const pos = positions[n.id];
+  if(!pos) return;
+  const g = el('g', {class:'node', 'data-id':n.id, transform:`translate(${pos.x},${pos.y})`});
+  const r = RADIUS[n.cat] || 14;
+  const hit = el('circle', {r: r + 14, class:'hit'});
+  g.appendChild(hit);
+  const circle = el('circle', {r:r, fill:COLORS[n.cat], class:'visible'});
+  g.appendChild(circle);
+  const lines = n.label.split('\n');
+  lines.forEach((line,i)=>{
+    const t = el('text', {y: r + 12 + i*11});
+    t.textContent = line;
+    g.appendChild(t);
+  });
+  g.addEventListener('click', ()=> selectNode(n.id));
+  viewport.appendChild(g);
+  nodeGroups[n.id] = g;
+});
+
+function selectNode(id){
+  const n = nodesById[id];
+  if(!n) return;
+  document.querySelectorAll('.node circle.visible').forEach(c=>c.style.filter='');
+  const g = nodeGroups[id];
+  if(g) g.querySelector('circle.visible').style.filter = 'brightness(1.5) drop-shadow(0 0 6px #fff)';
+  edgeEls.forEach(ee=>{
+    ee.el.classList.toggle('hi', ee.from===id || ee.to===id);
+  });
+  const sidebar = document.getElementById('sidebar');
+  sidebar.innerHTML = `
+    <span class="tag" style="background:${COLORS[n.cat]}">${LABELS[n.cat]}</span>
+    <h2>${n.label.replace(/\n/g,' ')}</h2>
+    <div class="val">${n.val||''}</div>
+    <div class="desc">${n.desc||''}</div>
+    <div class="src">Source: ${n.src||'n/a'}</div>
+  `;
+  sidebar.classList.add('expanded');
+}
+
+const legend = document.getElementById('legend');
+Object.keys(LABELS).forEach(cat=>{
+  const row = document.createElement('div');
+  row.innerHTML = `<span class="dot" style="background:${COLORS[cat]}"></span>${LABELS[cat]}`;
+  legend.appendChild(row);
+});
+
+const filtersDiv = document.getElementById('filters');
+Object.keys(LABELS).forEach(cat=>{
+  const label = document.createElement('label');
+  label.innerHTML = `<input type="checkbox" checked data-cat="${cat}"> ${LABELS[cat].split(' ')[0]}`;
+  filtersDiv.appendChild(label);
+});
+filtersDiv.addEventListener('change', ()=>{
+  const active = {};
+  filtersDiv.querySelectorAll('input').forEach(inp=> active[inp.dataset.cat]=inp.checked);
+  DATA.nodes.forEach(n=>{
+    const g = nodeGroups[n.id];
+    if(g) g.style.display = active[n.cat] ? '' : 'none';
+  });
+  edgeEls.forEach(ee=>{
+    const nf = nodesById[ee.from], nt = nodesById[ee.to];
+    const show = nf && nt && active[nf.cat] && active[nt.cat];
+    ee.el.style.display = show ? '' : 'none';
+  });
+});
+
+document.getElementById('search').addEventListener('input', (e)=>{
+  const q = e.target.value.trim().toLowerCase();
+  DATA.nodes.forEach(n=>{
+    const g = nodeGroups[n.id];
+    if(!g) return;
+    const match = !q || n.label.toLowerCase().includes(q) || (n.desc||'').toLowerCase().includes(q);
+    g.style.opacity = match ? '1' : '0.15';
+  });
+});
+
+const wrap = document.getElementById('canvasWrap');
+
+let isDown=false, startX, startY, startTX, startTY;
+wrap.addEventListener('mousedown', e=>{
+  isDown=true; wrap.classList.add('dragging');
+  startX=e.clientX; startY=e.clientY; startTX=transform.x; startTY=transform.y;
+});
+window.addEventListener('mousemove', e=>{
+  if(!isDown) return;
+  transform.x = startTX + (e.clientX-startX);
+  transform.y = startTY + (e.clientY-startY);
+  applyTransform();
+});
+window.addEventListener('mouseup', ()=>{ isDown=false; wrap.classList.remove('dragging'); });
+
+wrap.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  transform.k = Math.min(3, Math.max(0.15, transform.k*delta));
+  applyTransform();
+}, {passive:false});
+
+let touchState = null;
+function dist(t0,t1){ return Math.hypot(t0.clientX-t1.clientX, t0.clientY-t1.clientY); }
+function mid(t0,t1){ return {x:(t0.clientX+t1.clientX)/2, y:(t0.clientY+t1.clientY)/2}; }
+
+wrap.addEventListener('touchstart', e=>{
+  if(e.touches.length===1){
+    touchState = {mode:'pan', x:e.touches[0].clientX, y:e.touches[0].clientY, tx:transform.x, ty:transform.y};
+  } else if(e.touches.length===2){
+    touchState = {mode:'pinch', d:dist(e.touches[0],e.touches[1]), k:transform.k, m:mid(e.touches[0],e.touches[1]), tx:transform.x, ty:transform.y};
+  }
+}, {passive:true});
+
+wrap.addEventListener('touchmove', e=>{
+  if(!touchState) return;
+  if(touchState.mode==='pan' && e.touches.length===1){
+    transform.x = touchState.tx + (e.touches[0].clientX - touchState.x);
+    transform.y = touchState.ty + (e.touches[0].clientY - touchState.y);
+    applyTransform();
+  } else if(touchState.mode==='pinch' && e.touches.length===2){
+    const newD = dist(e.touches[0],e.touches[1]);
+    const scale = newD / touchState.d;
+    transform.k = Math.min(3, Math.max(0.15, touchState.k * scale));
+    applyTransform();
+  }
+  e.preventDefault();
+}, {passive:false});
+
+wrap.addEventListener('touchend', e=>{
+  if(e.touches.length===0) touchState=null;
+  else if(e.touches.length===1){
+    touchState = {mode:'pan', x:e.touches[0].clientX, y:e.touches[0].clientY, tx:transform.x, ty:transform.y};
+  }
+}, {passive:true});
+
+document.getElementById('zin').onclick = ()=>{ transform.k=Math.min(3,transform.k*1.25); applyTransform(); };
+document.getElementById('zout').onclick = ()=>{ transform.k=Math.max(0.15,transform.k*0.8); applyTransform(); };
+document.getElementById('zreset').onclick = ()=>{
+  transform = isMobile ? {x:40,y:60,k:0.42} : {x:60,y:20,k:0.72};
+  applyTransform();
+  document.getElementById('sidebar').classList.remove('expanded');
+};
+
+applyTransform();
+</script>
+</body>
+</html>
