@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Valley of Death: RDT&E vs Procurement Funding Gap (PAE/CPE Structure)</title>
+<meta property="og:title" content="Valley of Death: DoD Funding Gap Visualization">
+<meta property="og:description" content="Interactive map of the RDT&E-to-Procurement funding cliff under the Army's new PAE/CPE acquisition structure, featuring PIT, DARPA, DIU, and SCO.">
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2e; --panel2:#0e1626; --line:#243149;
+    --txt:#e7ecf5; --sub:#93a3c0; --accent:#5eead4; --accent2:#f97316;
+    --rdte:#3b82f6; --gap:#ef4444; --proc:#22c55e; --om:#a855f7; --org:#f59e0b; --pit:#ec4899;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--txt);overflow:hidden;height:100vh;}
+  #topbar{position:fixed;top:0;left:0;right:0;z-index:20;background:linear-gradient(180deg,rgba(11,18,32,.97),rgba(11,18,32,.85));padding:10px 14px;border-bottom:1px solid var(--line);}
+  #topbar h1{font-size:14px;margin:0 0 2px;font-weight:700;}
+  #topbar p{font-size:10.5px;color:var(--sub);margin:0;line-height:1.4;}
+  #legend{position:fixed;bottom:0;left:0;right:0;z-index:20;background:rgba(14,22,38,.97);border-top:1px solid var(--line);padding:8px 10px;display:flex;gap:9px;flex-wrap:wrap;font-size:10px;justify-content:center;max-height:34vh;overflow-y:auto;}
+  .lg{display:flex;align-items:center;gap:5px;color:var(--sub);}
+  .sw{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
+  #canvasWrap{position:absolute;top:0;left:0;right:0;bottom:0;touch-action:none;}
+  svg{width:100%;height:100%;display:block;cursor:grab;}
+  svg:active{cursor:grabbing;}
+  .node-label{font-size:12px;fill:var(--txt);font-weight:600;pointer-events:none;}
+  .node-sub{font-size:9px;fill:var(--sub);pointer-events:none;}
+  .stage-box{cursor:pointer;}
+  .stage-box:hover rect{filter:brightness(1.25);}
+  .bridge{cursor:pointer;}
+  .bridge:hover .bridge-pill{filter:brightness(1.3);}
+  .org-node{cursor:pointer;}
+  .org-node:hover circle{filter:brightness(1.3);}
+  .pae-node{cursor:pointer;}
+  .pae-node:hover rect{filter:brightness(1.3);}
+  #detail{position:fixed;z-index:30;background:var(--panel);border:1px solid var(--line);border-radius:14px 14px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.5);transition:transform .3s ease;transform:translateY(100%);left:0;right:0;bottom:0;max-height:64vh;overflow-y:auto;}
+  #detail.open{transform:translateY(0);}
+  #detail .handle{width:40px;height:4px;background:var(--line);border-radius:2px;margin:8px auto;}
+  #detail .inner{padding:4px 20px 24px;}
+  #detail h2{font-size:17px;margin:6px 0 4px;}
+  #detail .tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;background:var(--panel2);color:var(--accent);margin-bottom:8px;}
+  #detail p{font-size:13px;line-height:1.55;color:#c9d3e6;margin:6px 0;}
+  #detail .stat{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--line);}
+  #detail .stat b{color:var(--txt);text-align:right;margin-left:10px;}
+  #detail a.ext{color:var(--accent);font-size:12px;}
+  #closeDetail{position:absolute;top:8px;right:14px;background:none;border:none;color:var(--sub);font-size:20px;cursor:pointer;}
+  #controls{position:fixed;right:10px;bottom:38vh;z-index:20;display:flex;flex-direction:column;gap:6px;}
+  #controls button{width:38px;height:38px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--txt);font-size:18px;}
+  #backlink{position:fixed;top:8px;right:10px;z-index:25;font-size:10px;color:var(--accent);text-decoration:none;background:var(--panel2);padding:5px 9px;border-radius:8px;border:1px solid var(--line);}
+  #hint{position:fixed;top:50px;left:14px;z-index:15;font-size:9.5px;color:var(--sub);background:rgba(14,22,38,.8);padding:3px 8px;border-radius:6px;}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>Valley of Death — RDT&E vs Procurement (New Army PAE / CPE Structure)</h1>
+  <p>Overlay bands at top compare large prime vs. small business impact across the same lifecycle. A T2COM-led requirements spine (Concepts → Gaps → Prioritize → Approval) feeds S&T through the PAE handoff. Flow width ≈ FY26 dollars. Tap any node for detail.</p>
+</div>
+<a id="backlink" href="../" title="Back to main map">← Ecosystem Map</a>
+<div id="hint">Drag to pan · pinch/scroll to zoom</div>
+
+<div id="canvasWrap">
+  <svg id="svg" viewBox="0 0 1400 800" preserveAspectRatio="xMidYMid meet"></svg>
+</div>
+
+<div id="controls">
+  <button id="zin">+</button>
+  <button id="zout">−</button>
+  <button id="reset">⤾</button>
+</div>
+
+<div id="legend">
+  <div class="lg"><span class="sw" style="background:var(--rdte)"></span>RDT&E (2-yr money)</div>
+  <div class="lg"><span class="sw" style="background:var(--gap)"></span>Valley of Death</div>
+  <div class="lg"><span class="sw" style="background:var(--proc)"></span>Procurement (3-yr money)</div>
+  <div class="lg"><span class="sw" style="background:var(--om)"></span>O&M Sustainment (1-yr)</div>
+  <div class="lg"><span class="sw" style="background:var(--org)"></span>Bridge programs / early orgs</div>
+  <div class="lg"><span class="sw" style="background:var(--pit)"></span>PIT (innovation line)</div>
+  <div class="lg"><span class="sw" style="background:#38bdf8"></span>PAE (portfolio owner)</div>
+  <div class="lg"><span class="sw" style="background:#facc15"></span>ASA(ALT) (governs PAEs)</div>
+  <div class="lg" style="color:var(--accent)">🔗 = official website linked</div>
+  <div class="lg"><span class="sw" style="background:#2dd4bf"></span>SBIR/STTR (funding origin)</div>
+  <div class="lg"><span class="sw" style="background:#3b82f6;opacity:.4"></span>Large industry partner lane</div>
+  <div class="lg"><span class="sw" style="background:#f97316;opacity:.4"></span>Small business lane</div>
+  <div class="lg"><span class="sw" style="background:#c084fc"></span>Requirements (FCC/FCD)</div>
+  <div class="lg"><span class="sw" style="background:var(--gap);opacity:.5"></span>Smaller "requirements valley"</div>
+</div>
+
+<div id="detail">
+  <button id="closeDetail">✕</button>
+  <div class="handle"></div>
+  <div class="inner" id="detailInner"></div>
+</div>
+
+<script>
+const DATA = {
+  industryLanes: [
+    {id:"large", y:-30, h:50, color:"#3b82f6", label:"LARGE INDUSTRY PARTNER",
+      desc:"Prime contractors (Lockheed, RTX, General Dynamics, etc.) are built to absorb this entire lifecycle as a cost of doing business. They carry dedicated capture teams inside every PAE's building, can self-fund Independent R&D (IRAD) through the gap, and treat a 24-month PPBE lag as a planning input rather than an existential threat.",
+      stats:[["Balance sheet","Can self-fund IRAD across multi-year gaps"],["Capture presence","Dedicated teams embedded near PAE/CPE offices"],["Requirements access","Often helps SHAPE the FCD requirement pre-RFP (incumbency advantage)"],["Primary risk","Slower to pivot; portfolio bets are large and hard to kill once funded"]]},
+    {id:"small", y:30, h:50, color:"#f97316", label:"SMALL BUSINESS / STARTUP",
+      desc:"Small businesses and non-traditional vendors typically cannot survive a funding gap on their own capital. They depend entirely on bridge mechanisms (SBIR Phase III matching, APFIT, OTAs) to survive from prototype to program of record, and a single missed PAE budget cycle can be fatal to the company, not just the program.",
+      stats:[["Balance sheet","Runway typically 12-24 months without new capital"],["Capture presence","Often only 1-2 people tracking PAE budget cycles"],["Requirements access","Rarely sees a requirement before it's published; reacts rather than shapes"],["Primary risk","Cash-flow death during the gap, regardless of how good the technology is"]]}
+  ],
+  swExample: {x:1500, y:100, w:190, h:120,
+    desc:"A small business with an AI-enabled targeting or logistics software product faces a uniquely brutal version of the valley: commercial software ships updates weekly, but Army requirements (JCIDS/FCD), ATO (Authority to Operate) cybersecurity accreditation, and PAE budget cycles all move on 12-36 month clocks. By the time a CDD is validated and a PAE has budgeted for the capability, the company's actual product may be 2-3 major versions ahead of what was tested and accredited — forcing an impossible choice: freeze the product to stay compliant with a stale ATO, or keep innovating and risk losing accreditation entirely. Programs like the DoD Software Fast Track and Platform One aim to compress ATO timelines, but most software vendors still describe re-accreditation as slower than their entire commercial release cycle.",
+    stats:[["Commercial release cadence","Days to weeks (CI/CD)"],["JCIDS requirement validation","12-24+ months"],["ATO cybersecurity accreditation","6-18 months typical, longer for higher classification"],["PAE budget cycle to fund it","24-36 months (PPBE)"],["Net effect","Product may be 2-3 versions stale by the time it's fielded"],["Mitigation attempts","DoD Software Fast Track, Platform One reciprocity, continuous ATO pilots"]]
+  },
+  reqbar: {x:20, y:700, w:1200, h:70,
+    desc:"The requirements-writing spine that feeds every stage from early S&T through the PAE handoff. It stops at the PAE bars deliberately — once a PAE accepts a validated requirement, execution risk shifts from the requirements enterprise to the acquisition chain (procurement, testing, fielding).",
+    stats:[["Spans","S&T Research through PAE handoff (stops before Procurement execution)"],["Owner","Army Transformation & Training Command (T2COM)"],["Output","ICD, CDD, CPD (JCIDS documents)"]]
+  },
+  requirements: [
+    {id:"t2com", x:20, y:790, w:190, h:80, feedx:410, step:"1. CONCEPTS", title:"T2COM",
+      desc:"Army Transformation & Training Command sets top-level modernization concepts and priorities that everything downstream writes against. This is the slowest-moving, most abstract layer — concepts here can run 10-15 years ahead of fielded capability.",
+      website:"https://www.army.mil/FuturesandConceptsCommand",
+      stats:[["Sequence step","1 of 4: Concepts & Priorities"],["Risk","Concepts set 10-15yr out can drift from actual threat evolution before requirements are even written"],["Absorbed","Army Futures Command's requirements mission (2026)"]]},
+    {id:"fcds", x:250, y:790, w:230, h:80, feedx:680, step:"2. GAPS", title:"9 Future Capability Directorates (FCDs)",
+      desc:"Formerly CDIDs and Cross-Functional Teams, merged in 2026. Each FCD (Aviation, Fires, Cyber, Maneuver, etc.) identifies capability gaps within its own functional lane against T2COM's concepts.",
+      stats:[["Sequence step","2 of 4: Gap Identification"],["Risk","Nine directorates working in functional silos can each define the 'same' gap differently, creating duplicate or conflicting requirement threads before FID ever synchronizes them"],["Predecessor orgs","CDIDs + CFTs (merged 2026)"]]},
+    {id:"fid", x:510, y:790, w:200, h:80, feedx:900, step:"3. PRIORITIZE", title:"Futures Integration Directorate (FID)",
+      desc:"Synchronizes and prioritizes the gaps identified by all nine FCDs into a single ranked resourcing picture before anything is formally written up for validation.",
+      stats:[["Sequence step","3 of 4: Prioritization & Synchronization"],["Risk","Cross-directorate prioritization is a judgment call with no PAE or budget authority in the room — priorities set here can be re-ranked or ignored once real dollars enter the PPBE cycle"],["Parent","FCC"]]},
+    {id:"fccenter", x:740, y:790, w:220, h:80, feedx:1150, step:"4. APPROVAL", title:"Futures & Concepts Center (FCC)",
+      desc:"Converts prioritized gaps into formal ICD, CDD, and CPD documents and pushes them through JCIDS validation. Once approved, the requirement is handed to the matching PAE for acquisition execution.",
+      website:"https://www.army.mil/FuturesandConceptsCommand",
+      stats:[["Sequence step","4 of 4: Documentation & JCIDS Approval"],["Output docs","ICD, CDD, CPD"],["Risk","JCIDS validation can take 12-24+ months; by approval, the underlying threat or technology assumption may already be stale"],["Dual reporting","T2COM (requirements) + ASA(ALT) (acquisition alignment), per 2026 org chart"]]}
+  ],
+    reqgap: {x:990, y:700, w:60, h:230,
+    desc:"A smaller, earlier valley of death: FCDs write requirements on a 5-15 year concept horizon, disconnected in time and often in vocabulary from the PAE/CPE teams who must execute against near-term budget cycles. Requirements can be validated through JCIDS while funding realities in BA1-BA5 shift underneath them, or a PAE may prototype something no FCD ever formally wrote a requirement for (common with PIT/DIU/SCO rapid efforts), forcing a retroactive requirements fix.",
+    stats:[["Root cause","Concept/requirements horizon (5-15yr) vs budget horizon (2-3yr) mismatch"],["Symptom 1","JCIDS-validated requirement outlives its funding relevance"],["Symptom 2","PAE/PIT prototypes ahead of any formal requirement document"],["Attempted fix","FCC dual-reporting to T2COM + ASA(ALT) since 2026 reform"]]
+  },
+    stages: [
+    {id:"st1", x:340,  w:150, color:"var(--rdte)", title:"S&T Research", sub:"BA1–BA3 · $3.2B est.",
+      desc:"Basic and applied research plus advanced tech development. Funded by DARPA, Army DEVCOM labs, and university programs. Timelines run 3–8 years with no fielding obligation.",
+      stats:[["Budget Activities","BA1, BA2, BA3"],["FY26 est.","~$3.2B"],["Money type","2-year RDT&E"],["Typical TRL","1–5"]]},
+    {id:"st2", x:560, w:150, color:"var(--rdte)", title:"Prototyping", sub:"BA4 · incl. BA9 Agile",
+      desc:"Advanced component development and prototypes, now including the new FY26 BA9 'Agile RDT&E Portfolio Management' line targeting UAS, C-UAS, and EW at $690M+. PIT and RCCTO operate heavily here.",
+      stats:[["Budget Activities","BA4, BA9 (new FY26)"],["BA9 focus","UAS / C-UAS / EW"],["BA9 funding","$690M+"],["Money type","2-year RDT&E"]]},
+    {id:"st3", x:780, w:150, color:"var(--rdte)", title:"EMD", sub:"BA5 · $5.68B",
+      desc:"Engineering & Manufacturing Development — the last RDT&E stage before a program must transition to Procurement appropriations, now owned end-to-end by the relevant PAE rather than a standalone PEO.",
+      stats:[["Budget Activity","BA5"],["FY26 funding","$5.68B (37% of Army RDT&E)"],["Money type","2-year RDT&E"],["Owner","Relevant PAE (post-reform)"]]},
+    {id:"gap", x:1000, w:180, color:"var(--gap)", title:"THE VALLEY OF DEATH", sub:"~24-month PPBE lag (narrowing)",
+      desc:"A structural, not incidental, gap: Procurement budgets are locked ~24-36 months in advance. The Nov 2025 reform explicitly targets this by giving each PAE authority across requirements, S&T, contracting, testing, programming AND sustainment in one chain — intended to let a portfolio shift dollars internally rather than wait on PPBE and reprogramming cycles.",
+      stats:[["Root cause","RDT&E (2-yr) vs Procurement (3-yr) money mismatch"],["Typical lag","24 months"],["Reform goal","Portfolio-level dollar shifting w/o PPBE gymnastics"],["DoD FY24 Procurement","$168.7B"]]},
+    {id:"st4", x:1240, w:150, color:"var(--proc)", title:"Procurement", sub:"CPE-executed, PAE-owned",
+      desc:"Procurement is now executed by Capability Program Executives (CPEs, the former PEOs) operating inside a Portfolio Acquisition Executive (PAE). Each PAE holds single-leader accountability across the full lifecycle, replacing the old PEO-by-PEO stovepipes.",
+      stats:[["Controlled by","6 PAEs → 13 CPEs"],["Money type","3-year Procurement"],["Reform date","Nov 7, 2025 launch, IOC early 2026"],["FY24 DoD total","$168.7B"]]},
+    {id:"st5", x:1460,w:150, color:"var(--om)", title:"O&M Sustainment", sub:"1-year money",
+      desc:"Operations & Maintenance funds sustain fielded systems, now also owned within the PAE's single accountable chain rather than handed off to a separate sustainment command.",
+      stats:[["Money type","1-year O&M"],["Legal restriction","Cannot fund new R&D/procurement"],["Owner","Same PAE chain (post-reform)"],["Purpose","Sustain fielded capability"]]}
+  ],
+  // PIT sits as innovation "plus-one" spanning research through prototyping, per ASA(ALT)
+  pit: {x:560, y:600, w:300, h:70,
+    desc:"Pathway for Innovation and Technology (PIT) is ASA(ALT)'s 'forward edge' — the Army's dedicated acquisition-reform office and innovation line, working alongside (not under) the six PAEs. It absorbed most of RCCTO, the Army Applications Laboratory, and the Joint Innovation Outpost, and hosts non-traditional programs like FUZE to help companies that struggle to enter the defense industrial base. Official site: pit.army.mil.",
+    stats:[["Established","Nov 7, 2025 reform"],["Reports to","ASA(ALT), Deputy Assistant Secretary for Research & Technology"],["Absorbed","Most of RCCTO, Army Applications Lab, Joint Innovation Outpost"],["Nickname","The Army's 'plus one' (later 'plus two' with ES2)"],["Website","pit.army.mil"]]
+  },
+  orgs_left: [
+    {id:"darpa", x:140, y:150, label:"DARPA", desc:"High-risk, long-horizon research. Funds S&T and early prototyping only — has no legal authority to fund Procurement.", org:true, website:"https://www.darpa.mil"},
+    {id:"diu", x:140, y:250, label:"DIU", desc:"Defense Innovation Unit — accelerates commercial tech adoption via OTAs, sitting at the Prototyping/EMD boundary.", org:true, website:"https://www.diu.mil"},
+    {id:"sco", x:140, y:350, label:"SCO", desc:"Strategic Capabilities Office — rapidly combines existing systems for new missions, mid-horizon prototyping focus.", org:true, website:"https://www.cto.mil/sco/"}
+  ],
+  sbir: {x:520, y:130, label:"SBIR / STTR", website:"https://armysbir.army.mil",
+    desc:"Small Business Innovation Research and Small Business Technology Transfer — the actual origin point of most 'small business RDT&E' dollars, executed under ASA(ALT) as part of the Army FUZE portfolio. Phase I proves feasibility, Phase II builds the prototype, both funded from RDT&E set-asides inside S&T/Prototyping (BA1-BA4). Phase III is a sole-source award funded from a program's own Procurement dollars — meaning Phase III is technically the moment a company must find a PAE/CPE willing to adopt it, which is exactly where STRATFI/TACFI matching funds are designed to help.",
+    stats:[["Phase I","Up to $250K, 3-6 months, proves feasibility (RDT&E set-aside)"],["Phase II","Up to $2M, 12-18 months, builds prototype (RDT&E set-aside)"],["Phase III","No ceiling, sole-source, funded from Procurement (not SBIR money)"],["Managed by","Army Applied SBIR Office, ASA(ALT), part of Army FUZE portfolio"],["2026 status","Reauthorized through Sept 2031 after a 5-month lapse (Oct 2025-Mar 2026)"]]
+  },
+  asaalt: {x:1240, y:20, w:220, h:50,
+    desc:"Office of the Assistant Secretary of the Army for Acquisition, Logistics and Technology — the parent organization that designed and governs the entire PAE/CPE reform, and publishes the official org chart for all six PAEs.",
+    website:"https://www.army.mil/asaalt",
+    stats:[["Role","Parent org governing all PAEs/CPEs"],["Established","Oct 13, 1989 (Army Acquisition Corps)"],["Publishes","Official PAE/CPE org chart"]]
+  },
+  bridges: [
+    {id:"apfit", label:"APFIT", x1:1000,x2:1180,y:130,
+      desc:"Accelerate the Procurement and Fielding of Innovative Technologies. Congressionally created specifically to bridge this gap — has delivered over $2 billion in awards to 100+ small businesses since inception.",
+      stats:[["Total delivered","$2B+"],["Recipients","100+ small businesses"],["Next round focus (FY26)","Cheap tech made at scale"]]},
+    {id:"ota", label:"OTAs", x1:1000,x2:1180,y:210,
+      desc:"Other Transaction Authority agreements let DIU, SCO, PIT, and PAE-embedded senior contracting officials contract outside FAR rules, blending RDT&E and near-term production dollars.",
+      stats:[["Used by","DIU, SCO, PIT"],["Advantage","Bypasses traditional FAR/PPBE lag"]]},
+    {id:"stratfi", label:"STRATFI/TACFI", x1:1000,x2:1180,y:290,
+      desc:"AFWERX-style Strategic/Tactical Funding Increases pair a completed SBIR/STTR Phase II award (see SBIR/STTR node above, at Prototyping) with matching private capital, specifically to carry that technology across the Phase II-to-Phase III gap into a PAE's Procurement budget.",
+      stats:[["Model","Matched public + private funding"],["Origin","AFWERX, adopted DoD-wide"]]},
+    {id:"ba9bridge", label:"BA9 Agile Line", x1:1000,x2:1180,y:370,
+      desc:"The Army's brand-new FY26 Budget Activity 9 explicitly funds rapid transition of UAS, C-UAS, and EW prototypes, an attempt to build a permanent bridge rather than a one-off program.",
+      stats:[["Created","FY26"],["Funding","$690M+"],["Target","UAS / C-UAS / EW"]]},
+    {id:"scoff", label:"Embedded SCO*", x1:1000,x2:1180,y:450,
+      desc:"*Senior Contracting Official (embedded per-PAE): each of the six PAEs now has an embedded senior contracting official with authority to award contracts quickly — a structural attempt to shrink the valley itself rather than just bridge it.",
+      stats:[["Established","Nov 2025 reform"],["Authority","Fast contract award, embedded in PAE"]]}
+  ],
+  paes: [
+    {id:"pae_fires", x:1240, y:100, label:"PAE Fires", loc:"Redstone Arsenal, AL", website:"https://www.army.mil/PAEFires",
+      cpes:["CPE Defensive Fires","CPE Offensive Fires","CPE Integrated Fires"],
+      desc:"Owns missile, space, and self-propelled howitzer programs, plus most of RCCTO's legacy fires work. Activated its first three CPEs in Feb 2026.",
+      stats:[["Location","Redstone Arsenal, AL"],["CPEs","Defensive Fires, Offensive Fires, Integrated Fires"],["Legacy PEOs absorbed","PEO Missiles & Space, parts of RCCTO, GCS (SPHS)"]]},
+    {id:"pae_manground", x:1240, y:190, label:"PAE Maneuver Ground", loc:"Fort Benning, GA", website:"https://cpeground.army.mil",
+      cpes:["CPE Ground Combat Platforms","CPE Soldier Systems"],
+      desc:"Kept Ground Combat Platforms and Soldier Systems as separate CPEs (May 2026 decision) rather than merging into one 'CPE Ground,' preserving prior PEO-level focus.",
+      stats:[["Location","Fort Benning, GA"],["CPEs","Ground Combat Platforms, Soldier Systems (kept separate)"],["Legacy PEOs absorbed","PEO Soldier, PEO Ground Combat Systems"]]},
+    {id:"pae_manair", x:1240, y:280, label:"PAE Maneuver Air", loc:"Fort Rucker, AL",
+      cpes:["CPE Aviation","CPE Mission Autonomy","CPE Special Programs Air"],
+      desc:"Consolidates aviation and autonomy; gained CPE Special Programs Air in May 2026 to align Special Operations Aviation with conventional Army programs.",
+      stats:[["Location","Fort Rucker, AL"],["CPEs","Aviation, Mission Autonomy, Special Programs Air (new May 2026)"],["Legacy PEOs absorbed","PEO Aviation, aircraft survivability from IEW&S"]]},
+    {id:"pae_c2", x:1240, y:370, label:"PAE C2 / Counter-C2", loc:"Aberdeen Proving Ground, MD",
+      cpes:["CPE Intelligence & Spectrum Warfare","CPE Command Control & Info Network","CPE Simulation Training Test & Threat"],
+      desc:"Merges intelligence, EW, C3N, and simulation/training under one accountable chain — CPE ST3 (formerly PEO STRI) redesignated Feb 2026.",
+      stats:[["Location","Aberdeen Proving Ground, MD"],["CPEs","ISW, C2IN, ST3"],["Legacy PEOs absorbed","PEO IEW&S, PEO C3N, PEO STRI"]]},
+    {id:"pae_asa", x:1240, y:460, label:"PAE Agile Sustainment & Ammo", loc:"Picatinny Arsenal, NJ", website:"https://www.cpeae.army.mil",
+      cpes:["CPE Ammunition & Energetics","CPE Combat Logistics"],
+      desc:"Activated Feb 2026 as Single Manager for Conventional Ammunition; folds JPEO A&A and PEO CS&CSS into two CPEs directing R&D through sustainment in one chain.",
+      stats:[["Location","Picatinny Arsenal, NJ"],["CPEs","Ammunition & Energetics, Combat Logistics (Detroit Arsenal)"],["Legacy PEOs absorbed","JPEO A&A, PEO CS&CSS"]]},
+    {id:"pae_lp", x:1240, y:550, label:"PAE Layered Protection & CBRND", loc:"Fort Leonard Wood, MO",
+      cpes:["CPE CBRND"],
+      desc:"Folds Joint PEO CBRND and terrestrial sensor work from IEW&S into a unified chemical/bio/radiological defense portfolio.",
+      stats:[["Location","Fort Leonard Wood, MO"],["CPEs","CBRND"],["Legacy PEOs absorbed","JPEO-CBRND, terrestrial sensors from IEW&S"]]},
+    {id:"cpe_es2", x:1240, y:640, label:"CPE ES2 (\"plus two\")", loc:"outside PAE chain",
+      desc:"Enterprise Software & Services — formerly PEO Enterprise. Redesignated Feb 25, 2026; manages the Army's digital backbone as a critical enabler alongside PIT, forming a 'plus two' construct outside the six PAEs.",
+      stats:[["Formerly","PEO Enterprise"],["Redesignated","Feb 25, 2026"],["Role","Digital backbone enabler, akin to PIT"]]}
+  ]
+};
+
+const svg = document.getElementById('svg');
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs){ const e = document.createElementNS(NS, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function resolveColor(v){
+  if(v.startsWith('var(')){ const name = v.slice(4,-1).trim(); return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  return v;
+}
+
+const stageY = 250, stageH = 300;
+const layer = el('g', {id:'layer'});
+svg.appendChild(layer);
+
+// Industry partner overlay lanes across the top of the entire chart
+const laneXStart = -20, laneXEnd = 1610;
+DATA.industryLanes.forEach(lane=>{
+  const g = el('g',{class:'stage-box','data-id':'lane_'+lane.id});
+  const rect = el('rect',{x:laneXStart,y:lane.y,width:laneXEnd-laneXStart,height:lane.h,rx:10,
+    fill:lane.color,'fill-opacity':0.18,stroke:lane.color,'stroke-width':1.5,'stroke-dasharray':'6,4'});
+  g.appendChild(rect);
+  const t = el('text',{x:laneXStart+14,y:lane.y+lane.h/2+4,style:`font-size:11px;font-weight:800;fill:${lane.color};letter-spacing:0.5px;pointer-events:none`});
+  t.textContent = lane.label; g.appendChild(t);
+  layer.appendChild(g);
+});
+
+const heights = [140,150,150,60,150,120];
+for(let i=0;i<DATA.stages.length-1;i++){
+  const a = DATA.stages[i], b = DATA.stages[i+1];
+  const h1 = heights[i], h2 = heights[i+1];
+  const x1 = a.x+a.w, x2=b.x, ymid=stageY+stageH/2;
+  const path = el('path', {
+    d:`M${x1},${ymid-h1/2} C${(x1+x2)/2},${ymid-h1/2} ${(x1+x2)/2},${ymid-h2/2} ${x2},${ymid-h2/2}
+       L${x2},${ymid+h2/2} C${(x1+x2)/2},${ymid+h2/2} ${(x1+x2)/2},${ymid+h1/2} ${x1},${ymid+h1/2} Z`,
+    fill: resolveColor(a.id==='gap'||b.id==='gap' ? 'var(--gap)' : 'var(--rdte)'),
+    opacity: a.id==='gap'||b.id==='gap' ? 0.45 : 0.3
+  });
+  layer.appendChild(path);
+}
+
+DATA.stages.forEach((s,i)=>{
+  const h = heights[i]+40;
+  const y = stageY + stageH/2 - h/2;
+  const g = el('g',{class:'stage-box', 'data-id':s.id});
+  const rect = el('rect',{x:s.x,y:y,width:s.w,height:h,rx:14,fill:resolveColor(s.color),
+    'fill-opacity': s.id==='gap'?0.22:0.85, stroke:resolveColor(s.color), 'stroke-width': s.id==='gap'?2:0,
+    'stroke-dasharray': s.id==='gap'?'6,5':'none'});
+  g.appendChild(rect);
+  const t1 = el('text',{x:s.x+s.w/2,y:y+h/2-6,'text-anchor':'middle',class:'node-label'});
+  t1.textContent = s.title; g.appendChild(t1);
+  const t2 = el('text',{x:s.x+s.w/2,y:y+h/2+12,'text-anchor':'middle',class:'node-sub'});
+  t2.textContent = s.sub; g.appendChild(t2);
+  layer.appendChild(g);
+});
+
+// Requirements bar spanning full width, feeding upward into everything above
+(function(){
+  const rb = DATA.reqbar;
+  const g = el('g',{class:'stage-box','data-id':'reqbar'});
+  const rect = el('rect',{x:rb.x,y:rb.y,width:rb.w,height:rb.h,rx:12,fill:'#7e22ce','fill-opacity':0.55});
+  g.appendChild(rect);
+  const t1 = el('text',{x:rb.x+rb.w/2,y:rb.y+rb.h/2+5,'text-anchor':'middle',style:'font-size:13px;font-weight:700;fill:#f3e8ff;pointer-events:none'});
+  t1.textContent='REQUIREMENTS SPINE — feeds every stage above (S&T through Procurement)'; g.appendChild(t1);
+  layer.appendChild(g);
+})();
+
+// Sequential arrows connecting Concepts -> Gaps -> Prioritize -> Approval
+for(let i=0;i<DATA.requirements.length-1;i++){
+  const a = DATA.requirements[i], b = DATA.requirements[i+1];
+  const y = a.y + a.h/2;
+  const arrow = el('path',{d:`M${a.x+a.w},${y} L${b.x-4},${y}`, stroke:'#e9d5ff','stroke-width':2.5, 'marker-end':'url(#arrowhead)'});
+  layer.appendChild(arrow);
+}
+// arrowhead marker def
+const defs = el('defs',{});
+const marker = el('marker',{id:'arrowhead',markerWidth:8,markerHeight:8,refX:6,refY:4,orient:'auto'});
+const arrowPath = el('path',{d:'M0,0 L8,4 L0,8 Z', fill:'#e9d5ff'});
+marker.appendChild(arrowPath);
+defs.appendChild(marker);
+svg.insertBefore(defs, svg.firstChild);
+
+// Requirements boxes below the bar, each feeding upward with a connector line
+DATA.requirements.forEach(r=>{
+  const g = el('g',{class:'stage-box','data-id':'req_'+r.id});
+  // connector from box up into the requirements bar, offset toward the relevant stage above
+  const line = el('line',{x1:r.x+r.w/2, y1:r.y, x2:r.feedx, y2:DATA.reqbar.y+DATA.reqbar.h,
+    stroke:'#c084fc','stroke-width':2,'stroke-dasharray':'4,4',opacity:0.6});
+  layer.appendChild(line);
+  const rect = el('rect',{x:r.x,y:r.y,width:r.w,height:r.h,rx:12,fill:'#c084fc','fill-opacity':0.85});
+  g.appendChild(rect);
+  // sequence step label above box
+  const stepLabel = el('text',{x:r.x+r.w/2,y:r.y-8,'text-anchor':'middle',style:'font-size:9.5px;font-weight:800;fill:#e9d5ff;letter-spacing:0.5px;pointer-events:none'});
+  stepLabel.textContent = r.step; g.appendChild(stepLabel);
+  const words = r.title.split(' ');
+  let lines = [];
+  let cur = '';
+  words.forEach(w=>{ if((cur+' '+w).trim().length>22){ lines.push(cur.trim()); cur=w; } else { cur+=' '+w; } });
+  if(cur.trim()) lines.push(cur.trim());
+  const startY = r.y + r.h/2 - (lines.length-1)*7;
+  lines.slice(0,3).forEach((line,i)=>{
+    const t = el('text',{x:r.x+r.w/2,y:startY+i*14,'text-anchor':'middle',style:'font-size:11px;font-weight:600;fill:#2e1065;pointer-events:none'});
+    t.textContent=line; g.appendChild(t);
+  });
+  if(r.website){
+    const link = el('text',{x:r.x+r.w-16,y:r.y+16,'text-anchor':'middle',style:'font-size:12px;pointer-events:none'});
+    link.textContent='🔗'; g.appendChild(link);
+  }
+  layer.appendChild(g);
+});
+
+// Smaller "requirements valley" — narrow vertical gap along the requirements bar (between FCD and PAE handoff)
+(function(){
+  const rg = DATA.reqgap;
+  const g = el('g',{class:'stage-box','data-id':'reqgap'});
+  const rect = el('rect',{x:rg.x,y:rg.y,width:rg.w,height:rg.h,rx:10,fill:resolveColor('var(--gap)'),'fill-opacity':0.22,
+    stroke:resolveColor('var(--gap)'),'stroke-width':2,'stroke-dasharray':'5,5'});
+  g.appendChild(rect);
+  const warn = el('text',{x:rg.x+rg.w/2,y:rg.y-12,'text-anchor':'middle',style:'font-size:16px'});
+  warn.textContent='⚠️'; g.appendChild(warn);
+  layer.appendChild(g);
+})();
+
+// org nodes left (early ecosystem)// org nodes left (early ecosystem)
+DATA.orgs_left.forEach(o=>{
+  const g = el('g',{class:'org-node','data-id':o.id});
+  const line = el('line',{x1:o.x, y1:o.y, x2: DATA.stages[0].x, y2: stageY+stageH/2,
+    stroke:resolveColor('var(--org)'), 'stroke-width':1, 'stroke-dasharray':'3,4', opacity:0.4});
+  layer.appendChild(line);
+  const c = el('circle',{cx:o.x,cy:o.y,r:34,fill:resolveColor('var(--org)'),'fill-opacity':0.9});
+  g.appendChild(c);
+  const t = el('text',{x:o.x,y:o.y+4,'text-anchor':'middle',class:'node-label',style:'fill:#1a1206;font-size:11px'});
+  t.textContent=o.label; g.appendChild(t);
+  if(o.website){
+    const link = el('text',{x:o.x+22,y:o.y-20,'text-anchor':'middle',style:'font-size:13px;pointer-events:none'});
+    link.textContent='🔗'; g.appendChild(link);
+  }
+  layer.appendChild(g);
+});
+
+// SBIR/STTR node — sits at Prototyping stage where the money actually originates
+(function(){
+  const s = DATA.sbir;
+  const g = el('g',{class:'org-node','data-id':'sbir'});
+  const rect = el('rect',{x:s.x,y:s.y,width:180,height:56,rx:12,fill:'#2dd4bf','fill-opacity':0.9});
+  g.appendChild(rect);
+  const t1 = el('text',{x:s.x+90,y:s.y+24,'text-anchor':'middle',class:'node-label',style:'fill:#042f2e'});
+  t1.textContent=s.label; g.appendChild(t1);
+  const t2 = el('text',{x:s.x+90,y:s.y+40,'text-anchor':'middle',class:'node-sub',style:'fill:#042f2e'});
+  t2.textContent='Phase I/II RDT&E · Phase III = Procurement'; g.appendChild(t2);
+  const link = el('text',{x:s.x+164,y:s.y+16,'text-anchor':'middle',style:'font-size:12px;pointer-events:none'});
+  link.textContent='🔗'; g.appendChild(link);
+  // connector down into Prototyping stage
+  const line = el('line',{x1:s.x+90, y1:s.y+56, x2:DATA.stages[1].x+DATA.stages[1].w/2, y2:stageY,
+    stroke:'#2dd4bf','stroke-width':2,'stroke-dasharray':'4,4',opacity:0.6});
+  layer.appendChild(line);
+  layer.appendChild(g);
+})();
+
+// PIT box spanning research -> prototyping
+(function(){
+  const p = DATA.pit;
+  const g = el('g',{class:'org-node','data-id':'pit'});
+  const rect = el('rect',{x:p.x,y:p.y,width:p.w,height:p.h,rx:16,fill:resolveColor('var(--pit)'),'fill-opacity':0.85});
+  g.appendChild(rect);
+  const t1 = el('text',{x:p.x+p.w/2,y:p.y+p.h/2-4,'text-anchor':'middle',class:'node-label'});
+  t1.textContent='PIT — Pathway for Innovation & Technology'; g.appendChild(t1);
+  const t2 = el('text',{x:p.x+p.w/2,y:p.y+p.h/2+14,'text-anchor':'middle',class:'node-sub'});
+  t2.textContent="ASA(ALT) forward edge · pit.army.mil · spans S&T→Prototyping"; g.appendChild(t2);
+  const linkP = el('text',{x:p.x+p.w-16,y:p.y+16,'text-anchor':'middle',style:'font-size:12px;pointer-events:none'});
+  linkP.textContent='🔗'; g.appendChild(linkP);
+  // connector up to prototyping stage
+  const line = el('line',{x1:p.x+p.w/2, y1:p.y, x2:DATA.stages[1].x+DATA.stages[1].w/2, y2:stageY+stageH,
+    stroke:resolveColor('var(--pit)'),'stroke-width':2,'stroke-dasharray':'4,4',opacity:0.6});
+  layer.insertBefore(line, layer.firstChild);
+  layer.appendChild(g);
+})();
+
+// bridge pills over the gap
+DATA.bridges.forEach(b=>{
+  const g = el('g',{class:'bridge','data-id':b.id});
+  const midx=(b.x1+b.x2)/2, midy=b.y-20;
+  const path = el('path',{d:`M${b.x1},${b.y} Q${midx},${midy} ${b.x2},${b.y}`, fill:'none',
+    stroke:resolveColor('var(--org)'), 'stroke-width':3, 'stroke-dasharray':'2,6', opacity:0.7});
+  g.appendChild(path);
+  const pill = el('rect',{class:'bridge-pill', x:midx-58,y:midy-14,width:116,height:26,rx:13,fill:resolveColor('var(--org)')});
+  g.appendChild(pill);
+  const t = el('text',{x:midx,y:midy+4,'text-anchor':'middle',style:'fill:#1a1206;font-size:10.5px;font-weight:700;pointer-events:none'});
+  t.textContent=b.label; g.appendChild(t);
+  layer.appendChild(g);
+});
+
+// gap warning icon
+const gapStage = DATA.stages.find(s=>s.id==='gap');
+const warn = el('text',{x:gapStage.x+gapStage.w/2, y: stageY-40, 'text-anchor':'middle', style:'font-size:24px'});
+warn.textContent='⚠️';
+layer.appendChild(warn);
+
+// Software example callout box, sitting in the large/small partner lanes at top-right
+(function(){
+  const s = DATA.swExample;
+  const g = el('g',{class:'stage-box','data-id':'swExample'});
+  const rect = el('rect',{x:s.x,y:s.y,width:s.w,height:s.h,rx:12,fill:'#f97316','fill-opacity':0.85});
+  g.appendChild(rect);
+  const lines = ['SOFTWARE CASE STUDY:','Small biz AI/logistics','tool vs. pace of change'];
+  lines.forEach((line,i)=>{
+    const t = el('text',{x:s.x+s.w/2,y:s.y+24+i*17,'text-anchor':'middle',style:`font-size:${i===0?10:11.5}px;font-weight:${i===0?800:600};fill:#431407;pointer-events:none`});
+    t.textContent=line; g.appendChild(t);
+  });
+  layer.appendChild(g);
+})();
+
+// ASA(ALT) parent node
+(function(){
+  const a = DATA.asaalt;
+  const g = el('g',{class:'org-node','data-id':'asaalt'});
+  const rect = el('rect',{x:a.x,y:a.y,width:a.w,height:a.h,rx:12,fill:'#facc15','fill-opacity':0.9});
+  g.appendChild(rect);
+  const t1 = el('text',{x:a.x+a.w/2,y:a.y+a.h/2-4,'text-anchor':'middle',class:'node-label',style:'fill:#332600'});
+  t1.textContent='ASA(ALT)'; g.appendChild(t1);
+  const t2 = el('text',{x:a.x+a.w/2,y:a.y+a.h/2+14,'text-anchor':'middle',class:'node-sub',style:'fill:#332600'});
+  t2.textContent='Governs all PAEs/CPEs · army.mil/asaalt'; g.appendChild(t2);
+  const linkA = el('text',{x:a.x+a.w-16,y:a.y+16,'text-anchor':'middle',style:'font-size:12px;pointer-events:none'});
+  linkA.textContent='🔗'; g.appendChild(linkA);
+  layer.appendChild(g);
+})();
+
+// PAE column (right of gap, replacing old PEOs)
+DATA.paes.forEach(p=>{
+  const g = el('g',{class:'pae-node','data-id':p.id});
+  const w=190,h=64;
+  const x = p.x, y = p.y - h/2;
+  const line = el('line',{x1:gapStage.x+gapStage.w, y1:stageY+stageH/2, x2:x, y2:p.y,
+    stroke:'#38bdf8','stroke-width':1,'stroke-dasharray':'3,4',opacity:0.35});
+  layer.appendChild(line);
+  const rect = el('rect',{x:x,y:y,width:w,height:h,rx:12,fill:'#38bdf8','fill-opacity':0.85});
+  g.appendChild(rect);
+  const t1 = el('text',{x:x+w/2,y:y+22,'text-anchor':'middle',class:'node-label',style:'fill:#04202f'});
+  t1.textContent=p.label; g.appendChild(t1);
+  const t2 = el('text',{x:x+w/2,y:y+38,'text-anchor':'middle',class:'node-sub',style:'fill:#04202f'});
+  t2.textContent=p.loc; g.appendChild(t2);
+  const t3 = el('text',{x:x+w/2,y:y+53,'text-anchor':'middle',style:'font-size:8.5px;fill:#0a3a52;pointer-events:none'});
+  t3.textContent=(p.cpes? p.cpes.length+' CPEs':'Digital enabler'); g.appendChild(t3);
+  if(p.website){
+    const link = el('text',{x:x+w-14,y:y+16,'text-anchor':'middle',style:'font-size:12px;pointer-events:none'});
+    link.textContent='🔗'; g.appendChild(link);
+  }
+  layer.appendChild(g);
+});
+
+const svgWrapEl = document.getElementById('canvasWrap');
+let vb = {x:-40,y:-60,w:1950,h:1000};
+function applyVB(){ svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
+applyVB();
+let isDown=false, start={x:0,y:0}, startVB=null;
+svg.addEventListener('mousedown', e=>{isDown=true; start={x:e.clientX,y:e.clientY}; startVB={...vb};});
+window.addEventListener('mousemove', e=>{ if(!isDown) return; const dx=(e.clientX-start.x)*vb.w/svg.clientWidth; const dy=(e.clientY-start.y)*vb.h/svg.clientHeight; vb.x=startVB.x-dx; vb.y=startVB.y-dy; applyVB();});
+window.addEventListener('mouseup', ()=>isDown=false);
+svg.addEventListener('wheel', e=>{ e.preventDefault(); const scale = e.deltaY>0?1.08:0.92; zoom(scale, e.clientX, e.clientY);}, {passive:false});
+function zoom(scale, cx, cy){
+  const rect = svg.getBoundingClientRect();
+  const px = vb.x + (cx-rect.left)/rect.width*vb.w;
+  const py = vb.y + (cy-rect.top)/rect.height*vb.h;
+  vb.w*=scale; vb.h*=scale;
+  vb.x = px - (cx-rect.left)/rect.width*vb.w;
+  vb.y = py - (cy-rect.top)/rect.height*vb.h;
+  applyVB();
+}
+let touches=[];
+svg.addEventListener('touchstart', e=>{
+  touches=[...e.touches];
+  if(touches.length===1){ isDown=true; start={x:touches[0].clientX,y:touches[0].clientY}; startVB={...vb}; }
+}, {passive:true});
+svg.addEventListener('touchmove', e=>{
+  const t=[...e.touches];
+  if(t.length===1 && isDown){
+    const dx=(t[0].clientX-start.x)*vb.w/svg.clientWidth; const dy=(t[0].clientY-start.y)*vb.h/svg.clientHeight;
+    vb.x=startVB.x-dx; vb.y=startVB.y-dy; applyVB();
+  } else if(t.length===2){
+    const d0 = Math.hypot(touches[0].clientX-touches[1].clientX, touches[0].clientY-touches[1].clientY);
+    const d1 = Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+    if(d0>0){ const scale=d0/d1; const cx=(t[0].clientX+t[1].clientX)/2, cy=(t[0].clientY+t[1].clientY)/2; zoom(scale,cx,cy); }
+    touches=t;
+  }
+}, {passive:true});
+svg.addEventListener('touchend', ()=>{isDown=false;}, {passive:true});
+
+document.getElementById('zin').onclick=()=>zoom(0.85, window.innerWidth/2, window.innerHeight/2);
+document.getElementById('zout').onclick=()=>zoom(1.18, window.innerWidth/2, window.innerHeight/2);
+document.getElementById('reset').onclick=()=>{vb={x:-40,y:-60,w:1950,h:1000}; applyVB();};
+
+const detail = document.getElementById('detail');
+const detailInner = document.getElementById('detailInner');
+document.getElementById('closeDetail').onclick=()=>detail.classList.remove('open');
+
+function showDetail(title, tag, desc, stats, extraHtml){
+  let html = `<div class="tag">${tag}</div><h2>${title}</h2><p>${desc}</p>`;
+  if(stats && stats.length){
+    html += '<div style="margin-top:10px">';
+    stats.forEach(s=> html += `<div class="stat"><span>${s[0]}</span><b>${s[1]}</b></div>`);
+    html += '</div>';
+  }
+  if(extraHtml) html += extraHtml;
+  detailInner.innerHTML = html;
+  detail.classList.add('open');
+}
+
+layer.querySelectorAll('.stage-box').forEach(g=>{
+  g.addEventListener('click', ()=>{
+    const id = g.dataset.id;
+    if(id==='swExample'){
+      const s = DATA.swExample;
+      showDetail('Software Case Study: Small Business AI/Logistics Tool', 'PACE-OF-CHANGE RISK', s.desc, s.stats);
+      return;
+    }
+    if(id.startsWith('lane_')){
+      const lane = DATA.industryLanes.find(x=>x.id===id.replace('lane_',''));
+      showDetail(lane.label, 'Industry Partner Profile', lane.desc, lane.stats);
+      return;
+    }
+    if(id==='reqbar'){
+      const rb = DATA.reqbar;
+      showDetail('Requirements Spine', 'FEEDS ENTIRE LIFECYCLE', rb.desc, rb.stats);
+      return;
+    }
+    if(id==='reqgap'){
+      const rg = DATA.reqgap;
+      showDetail('Smaller Valley: Requirements ↔ Execution', 'DISCONNECT ZONE', rg.desc, rg.stats);
+      return;
+    }
+    if(id.startsWith('req_')){
+      const r = DATA.requirements.find(x=>x.id===id.replace('req_',''));
+      const linkHtml = r.website ? `<p><a class="ext" href="${r.website}" target="_blank">Visit official site →</a></p>` : '';
+      showDetail(r.title, 'Requirements Org', r.desc, r.stats, linkHtml);
+      return;
+    }
+    const s = DATA.stages.find(x=>x.id===id);
+    showDetail(s.title, s.id==='gap'?'CRITICAL GAP':'Budget Stage', s.desc, s.stats);
+  });
+});
+layer.querySelectorAll('.bridge').forEach(g=>{
+  g.addEventListener('click', ()=>{
+    const b = DATA.bridges.find(x=>x.id===g.dataset.id);
+    showDetail(b.label, 'Bridge Mechanism', b.desc, b.stats);
+  });
+});
+layer.querySelectorAll('.org-node').forEach(g=>{
+  g.addEventListener('click', ()=>{
+    if(g.dataset.id==='sbir'){
+      const s = DATA.sbir;
+      showDetail(s.label, 'Funding Origin Point', s.desc, s.stats,
+        `<p><a class="ext" href="${s.website}" target="_blank">Visit armysbir.army.mil →</a></p>`);
+      return;
+    }
+    if(g.dataset.id==='pit'){
+      showDetail('PIT — Pathway for Innovation & Technology', "Army's 'Plus One' Org", DATA.pit.desc, DATA.pit.stats,
+        `<p><a class="ext" href="https://pit.army.mil" target="_blank">Visit pit.army.mil →</a></p>`);
+      return;
+    }
+    if(g.dataset.id==='asaalt'){
+      const a = DATA.asaalt;
+      showDetail('ASA(ALT)', 'Parent Governing Organization', a.desc, a.stats,
+        `<p><a class="ext" href="${a.website}" target="_blank">Visit army.mil/asaalt →</a></p>`);
+      return;
+    }
+    const o = DATA.orgs_left.find(x=>x.id===g.dataset.id);
+    const linkHtml = o.website ? `<p><a class="ext" href="${o.website}" target="_blank">Visit official site →</a></p>` : '';
+    showDetail(o.label, 'Organization', o.desc, [], linkHtml);
+  });
+});
+layer.querySelectorAll('.pae-node').forEach(g=>{
+  g.addEventListener('click', ()=>{
+    const p = DATA.paes.find(x=>x.id===g.dataset.id);
+    let extraHtml = p.cpes ? `<p style="margin-top:10px"><b>Subordinate CPEs:</b><br>${p.cpes.join(' · ')}</p>` : '';
+    if(p.website) extraHtml += `<p><a class="ext" href="${p.website}" target="_blank">Visit official site →</a></p>`;
+    showDetail(p.label, 'PAE (replaces PEOs)', p.desc, p.stats, extraHtml);
+  });
+});
+</script>
+</body>
+</html>
