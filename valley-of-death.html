@@ -131,9 +131,9 @@ const DATA = {
     stats:[["Root cause","Concept/requirements horizon (5-15yr) vs budget horizon (2-3yr) mismatch"],["Symptom 1","JCIDS-validated requirement outlives its funding relevance"],["Symptom 2","PAE/PIT prototypes ahead of any formal requirement document"],["Attempted fix","FCC dual-reporting to T2COM + ASA(ALT) since 2026 reform"]]
   },
     stages: [
-    {id:"st1", x:340,  w:150, color:"var(--rdte)", title:"S&T Research", sub:"BA1–BA3 · $3.2B est.",
+    {id:"st1", x:340,  w:150, color:"var(--rdte)", title:"S&T Research", sub:"BA1–BA3 · $2.59B est.",
       desc:"Basic and applied research plus advanced tech development. Funded by DARPA, Army DEVCOM labs, and university programs. Timelines run 3–8 years with no fielding obligation.",
-      stats:[["Budget Activities","BA1, BA2, BA3"],["FY26 est.","~$3.2B"],["Money type","2-year RDT&E"],["Typical TRL","1–5"]]},
+      stats:[["Budget Activities","BA1, BA2, BA3"],["FY26 est.","~$2.59B"],["Money type","2-year RDT&E"],["Typical TRL","1–5"]]},
     {id:"st2", x:560, w:150, color:"var(--rdte)", title:"Prototyping", sub:"BA4 · incl. BA9 Agile",
       desc:"Advanced component development and prototypes, now including the new FY26 BA9 'Agile RDT&E Portfolio Management' line targeting UAS, C-UAS, and EW at $690M+. PIT and RCCTO operate heavily here.",
       stats:[["Budget Activities","BA4, BA9 (new FY26)"],["BA9 focus","UAS / C-UAS / EW"],["BA9 funding","$690M+"],["Money type","2-year RDT&E"]]},
@@ -142,10 +142,10 @@ const DATA = {
       stats:[["Budget Activity","BA5"],["FY26 funding","$5.68B (37% of Army RDT&E)"],["Money type","2-year RDT&E"],["Owner","Relevant PAE (post-reform)"]]},
     {id:"gap", x:1000, w:180, color:"var(--gap)", title:"THE VALLEY OF DEATH", sub:"~24-month PPBE lag (narrowing)",
       desc:"A structural, not incidental, gap: Procurement budgets are locked ~24-36 months in advance. The Nov 2025 reform explicitly targets this by giving each PAE authority across requirements, S&T, contracting, testing, programming AND sustainment in one chain — intended to let a portfolio shift dollars internally rather than wait on PPBE and reprogramming cycles.",
-      stats:[["Root cause","RDT&E (2-yr) vs Procurement (3-yr) money mismatch"],["Typical lag","24 months"],["Reform goal","Portfolio-level dollar shifting w/o PPBE gymnastics"],["DoD FY24 Procurement","$168.7B"]]},
+      stats:[["Root cause","RDT&E (2-yr) vs Procurement (3-yr) money mismatch"],["Typical lag","24 months"],["Reform goal","Portfolio-level dollar shifting w/o PPBE gymnastics"],["DoD FY24 Procurement","~$170B"]]},
     {id:"st4", x:1240, w:150, color:"var(--proc)", title:"Procurement", sub:"CPE-executed, PAE-owned",
       desc:"Procurement is now executed by Capability Program Executives (CPEs, the former PEOs) operating inside a Portfolio Acquisition Executive (PAE). Each PAE holds single-leader accountability across the full lifecycle, replacing the old PEO-by-PEO stovepipes.",
-      stats:[["Controlled by","6 PAEs → 13 CPEs"],["Money type","3-year Procurement"],["Reform date","Nov 7, 2025 launch, IOC early 2026"],["FY24 DoD total","$168.7B"]]},
+      stats:[["Controlled by","6 PAEs → 14 CPEs"],["Money type","3-year Procurement"],["Reform date","Nov 7, 2025 launch, IOC early 2026"],["FY24 DoD total","~$170B"]]},
     {id:"st5", x:1460,w:150, color:"var(--om)", title:"O&M Sustainment", sub:"1-year money",
       desc:"Operations & Maintenance funds sustain fielded systems, now also owned within the PAE's single accountable chain rather than handed off to a separate sustainment command.",
       stats:[["Money type","1-year O&M"],["Legal restriction","Cannot fund new R&D/procurement"],["Owner","Same PAE chain (post-reform)"],["Purpose","Sustain fielded capability"]]}
@@ -167,7 +167,7 @@ const DATA = {
   asaalt: {x:1240, y:20, w:220, h:50,
     desc:"Office of the Assistant Secretary of the Army for Acquisition, Logistics and Technology — the parent organization that designed and governs the entire PAE/CPE reform, and publishes the official org chart for all six PAEs.",
     website:"https://www.army.mil/asaalt",
-    stats:[["Role","Parent org governing all PAEs/CPEs"],["Established","Oct 13, 1989 (Army Acquisition Corps)"],["Publishes","Official PAE/CPE org chart"]]
+    stats:[["Role","Parent org governing all PAEs/CPEs"],["Predecessor office established","Late 1980s (Goldwater-Nichols-era acquisition-executive reforms)"],["Publishes","Official PAE/CPE org chart"]]
   },
   bridges: [
     {id:"apfit", label:"APFIT", x1:1000,x2:1180,y:130,
@@ -196,9 +196,9 @@ const DATA = {
       desc:"Kept Ground Combat Platforms and Soldier Systems as separate CPEs (May 2026 decision) rather than merging into one 'CPE Ground,' preserving prior PEO-level focus.",
       stats:[["Location","Fort Benning, GA"],["CPEs","Ground Combat Platforms, Soldier Systems (kept separate)"],["Legacy PEOs absorbed","PEO Soldier, PEO Ground Combat Systems"]]},
     {id:"pae_manair", x:1240, y:280, label:"PAE Maneuver Air", loc:"Fort Rucker, AL",
-      cpes:["CPE Aviation","CPE Mission Autonomy","CPE Special Programs Air"],
-      desc:"Consolidates aviation and autonomy; gained CPE Special Programs Air in May 2026 to align Special Operations Aviation with conventional Army programs.",
-      stats:[["Location","Fort Rucker, AL"],["CPEs","Aviation, Mission Autonomy, Special Programs Air (new May 2026)"],["Legacy PEOs absorbed","PEO Aviation, aircraft survivability from IEW&S"]]},
+      cpes:["CPE Aviation","CPE Special Programs Air"],
+      desc:"Consolidates aviation-related programs; gained CPE Special Programs Air in May 2026 to align Special Operations Aviation with conventional Army programs.",
+      stats:[["Location","Fort Rucker, AL"],["CPEs","Aviation, Special Programs Air (new May 2026)"],["Legacy PEOs absorbed","PEO Aviation, aircraft survivability from IEW&S"]]},
     {id:"pae_c2", x:1240, y:370, label:"PAE C2 / Counter-C2", loc:"Aberdeen Proving Ground, MD",
       cpes:["CPE Intelligence & Spectrum Warfare","CPE Command Control & Info Network","CPE Simulation Training Test & Threat"],
       desc:"Merges intelligence, EW, C3N, and simulation/training under one accountable chain — CPE ST3 (formerly PEO STRI) redesignated Feb 2026.",
@@ -207,10 +207,10 @@ const DATA = {
       cpes:["CPE Ammunition & Energetics","CPE Combat Logistics"],
       desc:"Activated Feb 2026 as Single Manager for Conventional Ammunition; folds JPEO A&A and PEO CS&CSS into two CPEs directing R&D through sustainment in one chain.",
       stats:[["Location","Picatinny Arsenal, NJ"],["CPEs","Ammunition & Energetics, Combat Logistics (Detroit Arsenal)"],["Legacy PEOs absorbed","JPEO A&A, PEO CS&CSS"]]},
-    {id:"pae_lp", x:1240, y:550, label:"PAE Layered Protection & CBRND", loc:"Fort Leonard Wood, MO",
-      cpes:["CPE CBRND"],
-      desc:"Folds Joint PEO CBRND and terrestrial sensor work from IEW&S into a unified chemical/bio/radiological defense portfolio.",
-      stats:[["Location","Fort Leonard Wood, MO"],["CPEs","CBRND"],["Legacy PEOs absorbed","JPEO-CBRND, terrestrial sensors from IEW&S"]]},
+    {id:"pae_lp", x:1240, y:550, label:"PAE Layered Protection & Integration", loc:"Fort Leonard Wood, MO",
+      cpes:["CPE CBRND","CPE Mission Autonomy"],
+      desc:"Folds Joint PEO CBRND, terrestrial sensor work from IEW&S, and the Mission Autonomy portfolio into a unified layered protection and integration portfolio.",
+      stats:[["Location","Fort Leonard Wood, MO"],["CPEs","CBRND, Mission Autonomy"],["Legacy PEOs absorbed","JPEO-CBRND, terrestrial sensors from IEW&S, autonomy elements realigned from Maneuver Air"]]},
     {id:"cpe_es2", x:1240, y:640, label:"CPE ES2 (\"plus two\")", loc:"outside PAE chain",
       desc:"Enterprise Software & Services — formerly PEO Enterprise. Redesignated Feb 25, 2026; manages the Army's digital backbone as a critical enabler alongside PIT, forming a 'plus two' construct outside the six PAEs.",
       stats:[["Formerly","PEO Enterprise"],["Redesignated","Feb 25, 2026"],["Role","Digital backbone enabler, akin to PIT"]]}
